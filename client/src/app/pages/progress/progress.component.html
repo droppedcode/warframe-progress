@@ -3,86 +3,76 @@
     <input matInput [(ngModel)]="filterText" placeholder="Filter">
   </mat-form-field>
   <mat-form-field>
-    <mat-select placeholder="Type" [(value)]="filterType">
-      <mat-option [value]="-1">All</mat-option>
-      <mat-option [value]="4">Warframe</mat-option>
-      <mat-option [value]="1">Primary</mat-option>
-      <mat-option [value]="2">Secondary</mat-option>
-      <mat-option [value]="3">Melee</mat-option>
-      <mat-option [value]="5">Archwing</mat-option>
-      <mat-option [value]="6">ArchGun</mat-option>
-      <mat-option [value]="7">ArchMelee</mat-option>
-      <mat-option [value]="8">Sentinel</mat-option>
-      <mat-option [value]="9">Companion</mat-option>
-      <mat-option [value]="10">Amp</mat-option>
-      <mat-option [value]="11">Zaw strike</mat-option>
-      <mat-option [value]="12">Zaw grip</mat-option>
-      <mat-option [value]="13">Zaw link</mat-option>
-      <mat-option [value]="14">Sentinel weapon</mat-option>
-      <mat-option [value]="0">Unknown</mat-option>
+    <mat-select placeholder="Category" [(value)]="filterCategory">
+      <mat-option [value]="categoryAll">All</mat-option>
+      <mat-option [value]="categoryDefault">Important</mat-option>
+      <mat-option [value]="['Archwing']">Archwing</mat-option>
+      <mat-option [value]="['Fish']">Fish</mat-option>
+      <mat-option [value]="['Gear']">Gear</mat-option>
+      <mat-option [value]="['Glyphs']">Glyphs</mat-option>
+      <mat-option [value]="['Melee']">Melee</mat-option>
+      <mat-option [value]="['Misc']">Misc</mat-option>
+      <mat-option [value]="['Mods']">Mods</mat-option>
+      <mat-option [value]="['Pets']">Pets</mat-option>
+      <mat-option [value]="['Primary']">Primary</mat-option>
+      <mat-option [value]="['Quests']">Quests</mat-option>
+      <mat-option [value]="['Relics']">Relics</mat-option>
+      <mat-option [value]="['Resources']">Resources</mat-option>
+      <mat-option [value]="['Secondary']">Secondary</mat-option>
+      <mat-option [value]="['Sentinels']">Sentinels</mat-option>
+      <mat-option [value]="['Sigils']">Sigils</mat-option>
+      <mat-option [value]="['Skins']">Skins</mat-option>
+      <mat-option [value]="['Warframes']">Warframes</mat-option>
     </mat-select>
   </mat-form-field>
   <mat-form-field>
     <mat-select placeholder="Progress" [(value)]="progress">
-      <mat-option [value]="-1">All</mat-option>
-      <mat-option [value]="0">No progress</mat-option>
-      <mat-option [value]="1">In progress</mat-option>
-      <mat-option [value]="2">Finished</mat-option>
+      <mat-option [value]="'all'">All</mat-option>
+      <mat-option [value]="'noprogress'">No progress</mat-option>
+      <mat-option [value]="'inprogress'">In progress</mat-option>
+      <mat-option [value]="'notfinished'">Not finished</mat-option>
+      <mat-option [value]="'finished'">Finished</mat-option>
     </mat-select>
   </mat-form-field>
 </div>
-<div class="scrollable">
-  <mat-table #table [dataSource]="dataSource" matSort matSortActive="name" matSortDirection="asc">
-    <!-- Name Column -->
-    <ng-container matColumnDef="tree">
-      <mat-header-cell *matHeaderCellDef></mat-header-cell>
-      <mat-cell *matCellDef="let item">
-        <button *ngIf="item.hasChildren" mat-icon-button (click)="item.isOpen = !item.isOpen; filterItems();">
+<div class="header">
+  <div><span>Name</span></div>
+  <div><span>Category</span></div>
+  <div><span>Type</span></div>
+  <div><span>Progress</span></div>
+  <div><span>Note</span></div>
+</div>
+<div #scroll class="scrollable" (scroll)="virtualScroll()">
+  <div class="virtual" [style.height.px]="virtualHeight">
+    <div class="virtual-item" *ngFor="let item of visibleItems" [class.even]="item.isEven" [style.top.px]="item.top" [style.height.px]="item.height"
+      [style.lineHeight.px]="item.height">
+      <div>
+        <button *ngIf="item.children?.length" mat-icon-button (click)="item.isOpen = !item.isOpen; filterItems();">
           <mat-icon *ngIf="!item.isOpen">keyboard_arrow_right</mat-icon>
           <mat-icon *ngIf="item.isOpen">keyboard_arrow_down</mat-icon>
         </button>
-      </mat-cell>
-    </ng-container>
-
-    <!-- Name Column -->
-    <ng-container matColumnDef="name">
-      <mat-header-cell *matHeaderCellDef mat-sort-header>Name</mat-header-cell>
-      <mat-cell *matCellDef="let item">
-        <div *ngIf="item.owner" class="child"></div>{{item.name}}</mat-cell>
-    </ng-container>
-
-    <ng-container matColumnDef="type">
-      <mat-header-cell *matHeaderCellDef mat-sort-header>Type</mat-header-cell>
-      <mat-cell *matCellDef="let item">{{item.type | itemType}}</mat-cell>
-    </ng-container>
-
-    <ng-container matColumnDef="progress">
-      <mat-header-cell *matHeaderCellDef mat-sort-header>Progress</mat-header-cell>
-      <mat-cell *matCellDef="let item">
-        <mat-checkbox *ngFor="let p of (item.maxProgress | numberToArray)" [attr.data-progress]="p" [checked]="item.progress > p" (change)="setProgress(item, !(item.progress > p), p + 1)"></mat-checkbox>
-      </mat-cell>
-    </ng-container>
-
-    <ng-container matColumnDef="description">
-      <mat-header-cell *matHeaderCellDef mat-sort-header>Description</mat-header-cell>
-      <mat-cell *matCellDef="let item">
-        <div>
-          <button *ngIf="isElevated" mat-icon-button (click)="editDescription(item)">
-            <mat-icon>edit</mat-icon>
-          </button>{{item.description}}</div>
-        <div [innerHtml]="item.location | newLine"></div>
-      </mat-cell>
-    </ng-container>
-
-    <ng-container matColumnDef="note">
-      <mat-header-cell *matHeaderCellDef mat-sort-header>Note</mat-header-cell>
-      <mat-cell *matCellDef="let item">
-        <button mat-icon-button (click)="editNote(item)">
-          <mat-icon>edit</mat-icon>
-        </button>{{item.note}}</mat-cell>
-    </ng-container>
-
-    <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
-    <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
-  </mat-table>
+      </div>
+      <div [class.child]="item.owner">
+        {{item.name}}
+      </div>
+      <div>
+        {{item.category}}
+      </div>
+      <div>
+        {{item.type}}
+      </div>
+      <div>
+        <div *ngIf="!item['itemCount'] || item['itemCount'] < 4">
+          <mat-checkbox *ngFor="let p of ((item['itemCount'] || 2) | numberToArray)" [attr.data-progress]="p" [checked]="item.userItem?.progress > p"
+            (change)="setProgress(item, !item.userItem || !(item.userItem.progress > p), p + 1)"></mat-checkbox>
+        </div>
+      </div>
+      <button class="edit" mat-icon-button (click)="editNote(item)">
+        <mat-icon>edit</mat-icon>
+      </button>
+      <div class="notes" [title]="item['location']">
+        {{item.userItem?.note}} {{item['location']}}
+      </div>
+    </div>
+  </div>
 </div>

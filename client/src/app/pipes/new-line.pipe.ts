@@ -1,5 +1,4 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { ItemType } from '../../data/progress/ItemType';
 
 @Pipe({
   name: 'newLine'

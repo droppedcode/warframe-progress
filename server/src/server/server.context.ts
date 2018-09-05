@@ -5,7 +5,6 @@ import * as uuid from 'uuid/v4';
 import * as sha256 from 'sha256';
 
 import * as path from 'path';
-import { ItemType } from '../data/ItemType';
 import { IUserItem } from '../data/userItem';
 
 export class ServerContext {
@@ -23,7 +22,6 @@ export class ServerContext {
   private statementAddSession;
   private statementGetSession;
 
-  private statementAddItem;
   private statementAddProgress;
   private statementSetProgress;
   private statementSetNote;
@@ -52,11 +50,12 @@ export class ServerContext {
       this.statementAddUser = db.prepare('INSERT INTO User VALUES(?, ?, ?, ?, ?, ?)')
       db.prepare('CREATE TABLE IF NOT EXISTS Session (id TEXT PRIMARY KEY, userId TEXT, validity INTEGER, FOREIGN KEY(userId) REFERENCES User(id));').run();
 
-      db.prepare('CREATE TABLE IF NOT EXISTS Item (id TEXT PRIMARY KEY, name TEXT, type INTEGER, ownerItemId TEXT, description TEXT, FOREIGN KEY(ownerItemId) REFERENCES Item(id));').run();
-      db.prepare('CREATE TABLE IF NOT EXISTS Progress (userId TEXT, itemId TEXT, progress INTEGER, note TEXT, PRIMARY KEY (userId, itemId), FOREIGN KEY(userId) REFERENCES User(id), FOREIGN KEY(itemId) REFERENCES Item(id));').run();
+      db.prepare('CREATE TABLE IF NOT EXISTS Progress (userId TEXT, itemId TEXT, progress INTEGER, note TEXT, PRIMARY KEY (userId, itemId), FOREIGN KEY(userId) REFERENCES User(id));').run();
 
       this.statementAddUser.run(uuid(), 'B', 'Balázs', Role.Administrator, sha256(''), null);
       this.statementAddUser.run(uuid(), 'J', 'Judit', Role.User, sha256(''), null);
+      this.statementAddUser.run(uuid(), 'T', 'Tim', Role.User, sha256(''), null);
+      this.statementAddUser.run(uuid(), 'G', 'Gergő', Role.User, sha256(''), null);
     }
     else {
       this.statementAddVersion = db.prepare('INSERT INTO Version VALUES(?)')
@@ -65,22 +64,7 @@ export class ServerContext {
 
     this.statementGetVersion = db.prepare('SELECT max(id) as id FROM Version;');
 
-    if (this.version < 1) {
-      db.prepare('ALTER TABLE Item ADD COLUMN location TEXT;').run();
-
-      this.statementAddVersion.run(1);
-    }  
-
-    if (this.version < 2) {
-      db.prepare('ALTER TABLE Item ADD COLUMN maxProgress INTEGER;').run();
-      db.prepare('ALTER TABLE Item ADD COLUMN version INTEGER;').run();
-
-      db.prepare('UPDATE Item SET maxProgress = 2 WHERE ownerItemId is NULL').run();
-      db.prepare('UPDATE Item SET maxProgress = 1 WHERE ownerItemId is NOT NULL').run();
-      db.prepare('UPDATE Item SET version = 0').run();
-
-      this.statementAddVersion.run(2);
-    }  
+    //Version update
 
     this.statementGetUser = db.prepare('SELECT * FROM User where id = ?;');
     this.statementGetUserByUserName = db.prepare('SELECT * FROM User where userName = ?;');
@@ -93,21 +77,12 @@ export class ServerContext {
     this.statementSetPassword = db.prepare('UPDATE User SET password = ? WHERE id = ?');
     this.statementSearch = db.prepare('SELECT * FROM User WHERE name LIKE ?');
 
-    this.statementAddItem = db.prepare('INSERT INTO Item VALUES(?, ?, ?, ?, ?, ?, ?, ?)');
     this.statementAddProgress = db.prepare('INSERT INTO Progress VALUES(?, ?, ?, ?)');
     this.statementSetProgress = db.prepare('UPDATE Progress SET progress = ? WHERE userId = ? AND itemId = ?');
     this.statementSetNote = db.prepare('UPDATE Progress SET note = ? WHERE userId = ? AND itemId = ?');
-    this.statementSetDescription = db.prepare('UPDATE Item SET description = ? WHERE id = ?');
-    this.statementSetLocation = db.prepare('UPDATE Item SET location = ? WHERE id = ?');
-    this.statementSetMaxProgress = db.prepare('UPDATE Item SET maxProgress = ? WHERE id = ?');
-    this.statementSetItemVersion = db.prepare('UPDATE Item SET version = ? WHERE id = ?');
 
-    this.statementGetItem = db.prepare('SELECT * FROM Item WHERE name = ? collate nocase AND Type = ?');
-    this.statementGetItemByName = db.prepare('SELECT * FROM Item WHERE name = ? collate nocase');
-    this.statementGetItemById = db.prepare('SELECT * FROM Item WHERE id = ?');
-    this.statementGetUserItem = db.prepare('SELECT i.id, i.name, i.type, i.ownerItemId, i.description, i.location, i.maxProgress, i.version, p.progress, p.note FROM Item i INNER JOIN Progress p ON i.id = p.itemId AND p.userId = ? where i.id = ?');
-    this.statementGetUserItems = db.prepare('SELECT i.id, i.name, i.type, i.ownerItemId, i.description, i.location, i.maxProgress, i.version, p.progress, p.note FROM Item i LEFT JOIN Progress p ON i.id = p.itemId AND p.userId = ?');
-    this.statementGetItems = db.prepare('SELECT * FROM Item');
+    this.statementGetUserItem = db.prepare('SELECT * FROM Progress WHERE userId = ? AND itemId = ?');
+    this.statementGetUserItems = db.prepare('SELECT * FROM Progress WHERE userId = ?');
   }
 
   get version(): number {
@@ -173,21 +148,12 @@ export class ServerContext {
     });
   }
 
-  public addItem(name: string, type: ItemType, ownerItemId: string, description: string, location: string, maxProgress: number, version: number): string {
-    console.log('Add item: ' + name + ' (' + ItemType[type] + ')');
-
-    let id = uuid();
-    this.statementAddItem.run(id, name, type, ownerItemId, description, location, maxProgress, version);
-    return id;
-  }
-
   public addProgress(userId: string, itemId: string, progress: number, note: string) {
     this.statementAddProgress.run(userId, itemId, progress, note);
   }
 
   public setProgress(userId: string, itemId: string, progress: number) {
     if (this.getUser(userId) == null) throw 'User does not exist';
-    if (this.getItemById(itemId) == null) throw 'Item does not exist';
 
     if (this.getUserItem(userId, itemId)) {
       this.statementSetProgress.run(progress, userId, itemId);
@@ -198,25 +164,12 @@ export class ServerContext {
 
   public setNote(userId: string, itemId: string, value: string) {
     if (this.getUser(userId) == null) throw 'User does not exist';
-    if (this.getItemById(itemId) == null) throw 'Item does not exist';
 
     if (this.getUserItem(userId, itemId)) {
       this.statementSetNote.run(value, userId, itemId);
     } else {
       this.addProgress(userId, itemId, null, value);
     }
-  }
-
-  public getItem(name: string, type: ItemType): IUserItem {
-    return this.statementGetItem.get(name, type);
-  }
-
-  public getItemByName(name: string): IUserItem {
-    return this.statementGetItemByName.get(name);
-  }
-
-  public getItemById(id: string): IUserItem {
-    return this.statementGetItemById.get(id);
   }
 
   public getUserItem(userId: string, itemId: string): IUserItem[] {
@@ -229,22 +182,6 @@ export class ServerContext {
 
   public setDescription(itemId: string, value: string) {
     this.statementSetDescription.run(value, itemId);
-  }
-
-  public setLocation(itemId: string, value: string) {
-    this.statementSetLocation.run(value, itemId);
-  }
-
-  public setMaxProgress(itemId: string, value: number) {
-    this.statementSetMaxProgress.run(value, itemId);
-  }
-
-  public setItemVersion(itemId: string, value: number) {
-    this.statementSetItemVersion.run(value, itemId);
-  }
-
-  public getItems(): IUserItem[] {
-    return this.statementGetItems.all();
   }
 
 }

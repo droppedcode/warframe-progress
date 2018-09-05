@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { IUser } from '../../data/core/user';
 import { IUserItem } from '../../data/progress/userItem';
 import { HttpClient } from '@angular/common/http';
+import { IItem } from '../../data/progress/item';
 
 export enum UserAction {
   role,
@@ -42,7 +43,11 @@ export class Service {
   }
 
   getItems() {
-    return this.http.get<IUserItem[]>('api/item');
+    return this.http.get<{ hash: string, data: IItem[] }>('api/item');
+  }
+
+  getProgress() {
+    return this.http.get<IUserItem[]>('api/item/progress');
   }
 
   setProgress(itemId: string, value: number) {

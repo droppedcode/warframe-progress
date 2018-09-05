@@ -39,11 +39,9 @@ import { RegisterComponent } from "./pages/core/register/register.component";
 import { Service } from "../services/core/service";
 import { LoginComponent } from "./pages/core/login/login.component";
 import { SearchComponent } from "./pages/core/search/search.component";
-import { ScrollDirective } from "./directives/scroll.directive";
 import { InformationComponent } from "./pages/information/information.component";
 import { UserActions } from "../store/action/core/user.action";
 import { ProgressComponent } from "./pages/progress/progress.component";
-import { ItemTypePipe } from "./pipes/item-type.pipe";
 import { TextEditorComponent } from "./pages/text-editor/text-editor.component";
 import { NewLinePipe } from "./pipes/new-line.pipe";
 import { NumberToArrayPipe } from "./pipes/number-to-array.pipe";
@@ -83,10 +81,8 @@ const appRoutes: Routes = [
     LoginComponent,
     SearchComponent,
     // Directives
-    ScrollDirective,
     InformationComponent,
     ProgressComponent,
-    ItemTypePipe,
     NewLinePipe,
     TextEditorComponent,
     NumberToArrayPipe

@@ -8,7 +8,7 @@ mat-cell {
 
 .scrollable {
   position: absolute;
-  top: 65.5px;
+  top: 105.5px;
   left: 0;
   right: 0;
   bottom: 0;
@@ -44,4 +44,108 @@ mat-row {
 .mat-column-name .child {
   display: inline-block;
   width: 20px;
+}
+
+.header {
+  position: absolute;
+  vertical-align: middle;
+  width: 100%;
+
+  div {
+    display: inline-block;
+
+    span {
+      padding: 10px;
+    }
+  }
+
+  div:nth-child(1) {
+    width: 300px;
+  }
+  
+  div:nth-child(2) {
+    width: 200px;
+  }
+  
+  div:nth-child(3) {
+    width: 200px;
+  }
+
+  div:nth-child(4) {
+    width: 120px;
+  }
+
+  div:nth-child(5) {
+    width: calc(100% - 820px);
+  }
+}
+
+.virtual {
+  position: relative;
+  background: transparent;
+
+  .virtual-item {
+    position: absolute;
+    width: 100%;
+
+    &.even {
+      background-color: #2e2e2e;
+    }
+
+    > div {
+      position: absolute;
+      vertical-align: middle;
+      top: 0;
+      height: 100%;
+    }
+
+    > div:nth-child(1) {
+      width: 40px;
+    }
+    
+    > div:nth-child(2) {
+      left: 40px;
+      width: 260px;
+
+      &.child {
+        left: 60px;
+        width: 240px;
+      }
+    }
+    
+    > div:nth-child(3) {
+      left: 300px;
+      width: 200px;
+    }
+    
+    > div:nth-child(4) {
+      left: 500px;
+      width: 200px;
+    }
+  
+    > div:nth-child(5) {
+      left: 700px;
+      width: 120px;
+    }
+  
+    > div:nth-child(7) {
+      left: 820px;
+      width: calc(100% - 820px);
+      white-space: nowrap; 
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    > .edit {
+      position: absolute;
+      left: 780px;
+      width: 40px;
+
+      display: none;
+    }
+
+    &:hover > .edit {
+      display: inline;
+    }
+  }
 }

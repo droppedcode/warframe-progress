@@ -40,6 +40,7 @@ export class Server {
   private server = this;
 
   public context: ServerContext;
+  public collector: Collector;
 
   public app: Application;
 
@@ -117,10 +118,10 @@ export class Server {
       console.log("Server started on port https://+:" + httpsPort + ".");
     }
 
-    let collector = new Collector(this.context);
-    collector.collect();
+    this.collector = new Collector(this.context);
+    this.collector.collect();
     setInterval(() => {
-      collector.collect();
+      this.collector.collect();
     }, 1000 * 60 * 60 * 24);
   }
 
@@ -409,13 +410,55 @@ export class Server {
       }
     });
 
-    router.route("/item").get((req, res) => {
+    router.route("/item/progress").get((req, res) => {
       if (!this.isLoggedIn(req)) {
         res.status(401).end();
         return;
       }
 
       res.json(this.context.getUserItems(this.getSessionUser(req).id));
+    });
+
+    router.route("/item").get((req, res) => {
+      // if (!this.isLoggedIn(req)) {
+      //   res.status(401).end();
+      //   return;
+      // }
+
+      res.json({
+        data: this.collector.clientItems,
+        hash: this.collector.clientItemsHash
+      });
+    });
+
+    router.route("/item/:hash").get((req, res) => {
+      if (!this.isLoggedIn(req)) {
+        res.status(401).end();
+        return;
+      }
+
+      if (req.params.hash === this.collector.clientItemsHash) {
+        res.json(true);
+      } else {
+        res.json({
+          data: this.collector.clientItems,
+          hash: this.collector.clientItemsHash
+        });
+      }
+    });
+
+    router.route("/item/image/:image").get((req, res) => {
+      if (!this.isLoggedIn(req)) {
+        res.status(401).end();
+        return;
+      }
+
+      let img = path.join(__dirname, 'warframe-items', 'data', 'img', req.params.image);
+      if (fs.existsSync(img)) {
+        res.sendFile(path.join(__dirname, 'warframe-items', 'data', 'img', req.params.image));
+      } else {
+        res.status(404).end();
+      }
     });
 
     router.route("/item/progress").put((req, res) => {

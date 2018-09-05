@@ -1,19 +1,5 @@
-import { ItemType } from "./ItemType";
-
 export interface IUserItem {
-  id: string;
-  name: string;
-  type: ItemType;
-  ownerItemId: string;
-  description: string;
+  itemId: string;
   progress: number;
-  note: string;
-  location: string;
-  maxProgress: number;
-  version: number;
-
-  hasChildren: boolean;
-  isOpen: boolean;
-  owner: IUserItem;
-  children: IUserItem[];
+  note?: string;
 }
