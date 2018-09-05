@@ -1,0 +1,16 @@
+<h1 mat-dialog-title>Register</h1>
+<mat-dialog-content>
+  <mat-form-field class="width-100">
+    <input matInput [(ngModel)]="name" placeholder="Name" value="" (keyup.enter)="register()">
+  </mat-form-field>
+  <mat-form-field class="width-100">
+    <input matInput [(ngModel)]="id" placeholder="Id" value="" (keyup.enter)="register()">
+  </mat-form-field>
+  <mat-form-field class="width-100">
+    <input type="password" matInput [(ngModel)]="pass" placeholder="Password" value="" (keyup.enter)="register()">
+  </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button [mat-dialog-close]="false">Cancel</button>
+  <button mat-raised-button color="primary" [disabled]="id && id.length < 3 && name && name.length > 3 && pass && pass.length > 3" (click)="register()">Register</button>
+</mat-dialog-actions>

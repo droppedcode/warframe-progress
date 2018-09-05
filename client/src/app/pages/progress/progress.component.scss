@@ -1,0 +1,47 @@
+mat-row {
+  position: relative;
+}
+
+mat-cell {
+  overflow: visible;
+}
+
+.scrollable {
+  position: absolute;
+  top: 65.5px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.mat-column-tree {
+  min-width: 40px;
+  flex-grow: 0;
+
+  .mat-icon {
+    vertical-align: middle;
+  }
+}
+
+mat-row {
+  mat-cell.mat-column-note,mat-cell.mat-column-description {
+    button {
+      display: none;
+    }
+  }
+
+  &:hover {
+    mat-cell.mat-column-note,mat-cell.mat-column-description {
+      button {
+        display: block;
+        position: absolute;
+        top: 0;
+      }
+    }
+  }
+}
+
+.mat-column-name .child {
+  display: inline-block;
+  width: 20px;
+}

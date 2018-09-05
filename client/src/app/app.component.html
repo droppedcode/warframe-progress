@@ -1,0 +1,74 @@
+<div [ngSwitch]="screen" class="fill">
+  <div *ngSwitchCase="'connect'" class="fill">
+    <div class="fill">
+      <div class="loading">
+        <div>
+          <i class="material-icons loading-image"> cloud </i>
+        </div>
+        <div class="loading-text">Connecting to session...</div>
+      </div>
+    </div>
+  </div>
+  <div *ngSwitchCase="'connected'" class="fill">
+    <mat-sidenav-container>
+      <mat-sidenav #sidenav mode="over" opened="false">
+        <div>
+          <div *ngIf="user">
+            <mat-toolbar>
+              <span>{{user.name}}</span>
+            </mat-toolbar>
+          </div>
+          <button type="button" mat-button (click)="context.navigation.go('connected:'); context.router.navigateByUrl('/'); sidenav.close();">Information</button>
+          <button *ngIf="isLoggedIn" type="button" mat-button (click)="context.navigation.go('connected:'); context.router.navigateByUrl('/progress'); sidenav.close();">Progress</button>
+
+          <button *ngIf="isAdministrator" type="button" mat-button (click)="register(); sidenav.close();">Register</button>
+          <button *ngIf="isElevated" type="button" mat-button (click)="context.navigation.go('connected:search'); sidenav.close();">Search</button>
+          
+          <button *ngIf="isLoggedIn" type="button" mat-button (click)="context.navigation.go('connected:user'); sidenav.close();">User</button>
+          <button *ngIf="!isLoggedIn" type="button" mat-button (click)="login(); sidenav.close();">Login</button>
+          <button *ngIf="isLoggedIn" type="button" mat-button (click)="logout(); context.navigation.go('connected:'); sidenav.close();">Logout</button>
+
+          <!-- <div class="lang">
+            hu
+            <mat-slide-toggle [(ngModel)]="context.isEnglish">
+            </mat-slide-toggle>
+            en
+          </div> -->
+        </div>
+      </mat-sidenav>
+      <div [ngSwitch]="page" class="fill page">
+        <div *ngSwitchCase="'user'" class="fill">
+          <wfp-user></wfp-user>
+        </div>
+        <div *ngSwitchCase="'search'" class="fill">
+          <wfp-search></wfp-search>
+        </div>
+        <div *ngSwitchDefault class="fill scrollable main">
+          <router-outlet></router-outlet>
+        </div>
+      </div>
+      <button class="toggle" mat-mini-fab (click)="sidenav.toggle()">
+        <mat-icon>menu</mat-icon>
+      </button>
+    </mat-sidenav-container>
+  </div>
+  <div *ngSwitchDefault class="fill">
+    <div class="fill">
+      <div class="error">
+        <div>
+          <i class="material-icons error-image"> sentiment_very_dissatisfied </i>
+        </div>
+        <div class="error-text">The page is not found.</div>
+        <button md-button (click)="context.navigation.reload()">Reload page</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="fill loader" *ngIf="isLoading">
+  <div class="loading">
+    <div>
+      <i class="material-icons loading-image"> cloud_queue </i>
+    </div>
+    <div class="loading-text">Loading...</div>
+  </div>
+</div>

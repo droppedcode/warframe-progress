@@ -1,0 +1,6 @@
+<mat-form-field class="width-100">
+  <input #name matInput placeholder="Name" (keyup)="search(name.value)">
+</mat-form-field>
+<div *ngFor="let item of list" (click)="select(item.id)">
+  <div>{{item.name}} ({{item.id}})</div>
+</div>

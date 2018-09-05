@@ -1,0 +1,54 @@
+.role {
+  position: absolute;
+  top: 0;
+  right: 0;
+
+  &.role1 {
+    width: 3vh;
+    height: 1vh;
+  }
+
+  &.role2 {
+    width: 1vh;
+    height: 3vh;
+  }
+
+  &[role=administrator] {
+    background: red;
+  }
+
+  &[role=gamemaster] {
+    background: purple;
+  }
+
+  &[role=player] {
+    background: turquoise;
+  }
+}
+
+.user {
+  text-align: center;
+  font-size: 2em;
+}
+
+.admin {
+  text-align: center;
+
+}
+
+input {
+  text-align: center;
+}
+
+.mat-button {
+  font-size: 1em;
+
+  &.slim {
+    padding: 0;
+    min-width: 0;
+  }
+}
+
+img {
+  width: 5vh;
+}

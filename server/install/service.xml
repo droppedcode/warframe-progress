@@ -1,0 +1,10 @@
+<service>
+  <id>node</id>
+  <name>Node</name>
+  <description>This service runs node js.</description>
+  <executable>node</executable>
+  <arguments>index.js</arguments>
+  <logmode>rotate</logmode>
+  <onfailure action="restart" />
+  <workingdirectory>C:\project\release</workingdirectory>
+</service>

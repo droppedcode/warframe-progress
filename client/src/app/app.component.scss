@@ -1,0 +1,70 @@
+mat-sidenav-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  mat-sidenav {
+    min-width: calc(100% - 10vh);
+    max-width: calc(100% - 10vh);
+
+    button {
+      width: 100%;
+      font-size: 3vh;
+      text-align: left;
+      padding: 1vh;
+      padding-left: 4vh;
+    }
+  }
+
+  .toggle {
+    position: absolute;
+    right: 2vh;
+    top: 2vh;
+  }
+
+}
+
+.mat-drawer-container {
+  background: none;
+}
+
+.loader {
+  z-index: 100;
+  background: rgba(#000, .8);
+}
+
+.role {
+  position: absolute;
+  top: 0;
+  right: 0;
+
+  &.role1 {
+    width: 3vh;
+    height: 1vh;
+  }
+
+  &.role2 {
+    width: 1vh;
+    height: 3vh;
+  }
+
+  &[role=administrator] {
+    background: red;
+  }
+
+  &[role=gamemaster] {
+    background: purple;
+  }
+
+  &[role=player] {
+    background: turquoise;
+  }  
+}
+
+.lang {
+  position: absolute;
+  bottom: 2vh;
+  right: 2vh;
+}
