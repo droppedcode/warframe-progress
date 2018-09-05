@@ -50,6 +50,6 @@
     "path": "^0.12.7",
     "sha256": "^0.2.0",
     "uuid": "^3.1.0",
-    "warframe-items": "^1.29.0"
+    "warframe-items": "git+https://github.com/WFCD/warframe-items.git#development"
   }
 }

@@ -1,6 +1,0 @@
-{
-  "useEnvPort": false,
-  "port": 8200,
-  "securePort": false,
-  "wwwroot": "./wwwroot"
-}
