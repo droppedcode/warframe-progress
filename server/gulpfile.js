@@ -29,7 +29,7 @@ gulp.task('ssl', function () {
     .pipe(gulp.dest(destinationPath));
 });
 gulp.task('data', function () {
-  return gulp.src(['./data**/**/*.*', './package*.json', './node_modules/warframe-items**/data/**/*.*'])
+  return gulp.src(['./data**/**/*.*', './package*.json'])
     .pipe(gulp.dest(destinationPath));
 });
 // gulp.task('build', function () {

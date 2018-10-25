@@ -18,7 +18,16 @@ export class Collector {
   constructor(private context: ServerContext) {}
 
   private async updateWarframeItems() {
-    const { stdout, stderr } = await exec("npm update warframe-items");
+    let wfpath = path.resolve(__dirname, "warframe-items");
+    if (fs.existsSync(wfpath)) {
+      let { stdout, stderr } = await exec(
+        'cd "' + wfpath + '" & git pull & cd "' + wfpath + '"\\..'
+      );
+    } else {
+      let { stdout, stderr } = await exec(
+        'cd "' + wfpath + '"\\.. & git clone --single-branch -b development https://github.com/WFCD/warframe-items.git'
+      );
+    }
   }
 
   async collect() {
@@ -34,7 +43,8 @@ export class Collector {
     this.itemsHash = Hash().hash(this.items);
 
     this.clientItems = cloneDeep(
-      this.items/*.filter(f => {
+      this
+        .items /*.filter(f => {
         switch (f.category) {
           case "Mods":
           case "Primary":
