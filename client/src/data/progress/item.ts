@@ -15,17 +15,19 @@ export interface IItem {
 
   hasChildren: boolean;
   isOpen: boolean;
+  isVisible: boolean;
   owner: IItem;
   children: IItem[];
   sort: string;
 
+  hierarchyName: string;
   isEven: boolean;
   top: number;  
   height: number;  
 }
 
 export interface IComponent extends IItem {
-  itemCount: string;
+  itemCount: number;
 
   location?: string;
 }

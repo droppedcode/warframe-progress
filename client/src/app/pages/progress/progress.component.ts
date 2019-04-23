@@ -6,33 +6,36 @@ import {
   ViewChild,
   AfterViewInit,
   ElementRef
-} from "@angular/core";
-import { AppContext } from "../../app.context";
-import { IUserItem } from "../../../data/progress/userItem";
-import { TextEditorComponent } from "../text-editor/text-editor.component";
-import { select } from "@angular-redux/store";
-import { LoginComponent } from "../core/login/login.component";
-import { Observable } from "rxjs";
-import { IItem } from "../../../data/progress/item";
+} from '@angular/core';
+import { AppContext } from '../../app.context';
+import { IUserItem } from '../../../data/progress/userItem';
+import { TextEditorComponent } from '../text-editor/text-editor.component';
+import { select } from '@angular-redux/store';
+import { LoginComponent } from '../core/login/login.component';
+import { Observable } from 'rxjs';
+import { IItem } from '../../../data/progress/item';
+import { forEach } from '@angular/router/src/utils/collection';
 
 const itemHeight = 40;
 
 @Component({
-  selector: "wfp-progress",
-  templateUrl: "./progress.component.html",
-  styleUrls: ["./progress.component.scss"],
+  selector: 'wfp-progress',
+  templateUrl: './progress.component.html',
+  styleUrls: ['./progress.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: "fill scrollable"
+    class: 'fill scrollable'
   }
 })
 export class ProgressComponent implements OnInit, AfterViewInit {
-  @select(["user", "isElevated"])
+  @select(['user', 'isElevated'])
   isElevated$: Observable<boolean>;
   isElevated: boolean;
 
-  @ViewChild("scroll")
+  @ViewChild('scroll')
   scrollElement: ElementRef;
+
+  public JSON = JSON;
 
   public virtualHeight: number;
 
@@ -42,41 +45,88 @@ export class ProgressComponent implements OnInit, AfterViewInit {
 
   private _filterTimeout;
   private _filterText: string;
-  private _filterRegex: RegExp;
+  private _filterMethod: (string) => boolean;
   get filterText(): string {
     return this._filterText;
   }
   set filterText(value: string) {
+    this._filterText = value;
+    this.updateFilter();
+  }
+
+  private updateFilter() {
     if (this._filterTimeout) {
       clearTimeout(this._filterTimeout);
     }
-    //if (value.length > 0 && value.length < 3) return;
 
     this._filterTimeout = setTimeout(() => {
-      this._filterText = value;
-      this._filterRegex = new RegExp(value, "i");
+      if (this._filterText) {
+        switch (this._filterTextType) {
+          case 'text':
+          case 'regex':
+            let regexp = new RegExp(this._filterText, 'i');
+            this._filterMethod = (s: string) => regexp.test(s);
+            break;
+          case 'logic':
+            let parts = this._filterText.split(' ');
+            let regexps = parts
+              .filter(f => !!f)
+              .map(
+                m =>
+                  new RegExp(
+                    m[0] === '!' ? '^(?!.*' + m.substr(1) + ')' : m,
+                    'i'
+                  )
+              );
+            this._filterMethod = (s: string) => !regexps.find(f => !f.test(s));
+            break;
+        }
+      } else {
+        this._filterMethod = null;
+      }
+
       this.filterItems();
     }, 50);
   }
 
-  categoryAll = [];
-  categoryDefault = ["Melee", "Primary", "Secondary", "Warframes"];
-
-  private _filterCategory: string[] = this.categoryDefault;
-  get filterCategory(): string[] {
-    return this._filterCategory;
+  private _filterTextType: string = 'logic';
+  get filterTextType(): string {
+    return this._filterTextType;
   }
-  set filterCategory(value: string[]) {
-    this._filterCategory = value;
+  set filterTextType(value: string) {
+    this._filterTextType = value;
+    this.updateFilter();
+  }
+
+  categoryDefault = ['Melee', 'Primary', 'Secondary', 'Warframes'];
+  categories: string[] = [];
+
+  private _filterCategory: string[] = [];
+  get filterCategory(): string {
+    return JSON.stringify(this._filterCategory);
+  }
+  set filterCategory(value: string) {
+    this._filterCategory = JSON.parse(value);
     this.filterItems();
   }
 
-  private _progress: string = "notfinished";
-  get progress(): string {
-    return this._progress;
+  types: string[] = [];
+
+  private _filterType: string[] = [];
+  get filterType(): string {
+    return JSON.stringify(this._filterType);
   }
-  set progress(value: string) {
-    this._progress = value;
+  set filterType(value: string) {
+    this._filterType = JSON.parse(value);
+    this.filterItems();
+  }
+
+  private _filterProgress: string = 'notfinished';
+  get filterProgress(): string {
+    return this._filterProgress;
+  }
+  set filterProgress(value: string) {
+    this._filterProgress = value;
     this.filterItems();
   }
 
@@ -89,12 +139,12 @@ export class ProgressComponent implements OnInit, AfterViewInit {
 
   ngOnInit() {
     if (!this.context.store.getState().user.isLoggedIn) {
-      this.context.router.navigateByUrl("/");
-      this.context.alert("Please log in.");
+      this.context.router.navigateByUrl('/');
+      this.context.alert('Please log in.');
       let dialog = this.context.dialog.open(LoginComponent);
       dialog.afterClosed().subscribe(value => {
         if (value) {
-          this.context.router.navigateByUrl("/progress");
+          this.context.router.navigateByUrl('/progress');
           this.init();
         }
       });
@@ -107,6 +157,21 @@ export class ProgressComponent implements OnInit, AfterViewInit {
 
   private init() {
     this.context.navigation.loading(true);
+
+    if (typeof Storage !== 'undefined') {
+      let stored = localStorage.getItem('progress-filter');
+      if (stored) {
+        let data = JSON.parse(stored);
+        this._filterText = data.text;
+        this._filterTextType = data.textType;
+        this._filterCategory = data.category;
+        this._filterType = data.type;
+        this._filterProgress = data.progress;
+
+        this.updateFilter();
+      }
+    }
+
     this.context.service
       .getItems()
       .toPromise()
@@ -120,16 +185,14 @@ export class ProgressComponent implements OnInit, AfterViewInit {
             for (let i = 0; i < this.items.length; i++) {
               let item = this.items[i];
               if (!item.name) {
-                item.name = "";
+                item.name = '';
               }
+              item.hierarchyName = item.uniqueName;
             }
 
             this.items = this.items.sort((item1, item2) =>
               item1.name.localeCompare(item2.name)
             );
-
-            let relics = {};
-            this.items.filter(f => f.category === 'Relics').forEach(r => relics[r.name] = r.drops && r.drops.length > 0);
 
             for (let i = 0; i < this.items.length; i++) {
               let item = items.data[i];
@@ -140,8 +203,8 @@ export class ProgressComponent implements OnInit, AfterViewInit {
 
                 let components = item.components.filter(c => {
                   if (
-                    c.uniqueName.startsWith("/Lotus/Types/Items/MiscItems/") ||
-                    c.uniqueName.startsWith("/Lotus/Types/Items/Research/")
+                    c.uniqueName.startsWith('/Lotus/Types/Items/MiscItems/') ||
+                    c.uniqueName.startsWith('/Lotus/Types/Items/Research/')
                   ) {
                     return false;
                   }
@@ -151,7 +214,7 @@ export class ProgressComponent implements OnInit, AfterViewInit {
 
                 if (
                   components.length === 1 &&
-                  components[0].name === "Blueprint"
+                  components[0].name === 'Blueprint'
                 ) {
                   //Don't add a blueprint only
                 } else {
@@ -161,39 +224,21 @@ export class ProgressComponent implements OnInit, AfterViewInit {
                     this.items.splice(index, 0, component);
 
                     component.sort =
-                      item.sort + "   $$$" + (component.name || "");
+                      item.sort + '   $$$' + (component.name || '');
 
                     if (
-                      component.uniqueName.startsWith("/Lotus/Types/Recipes/")
+                      component.uniqueName.startsWith('/Lotus/Types/Recipes/')
                     ) {
-                      component.name = item.name + " " + component.name;
-                    }
-
-                    if (component.drops) {
-                      let relicDrops = component.drops.filter(
-                        f => f.type === "Relics"
-                      );
-                      let relicNames: string[] = [];
-                      for (let k = 0; k < relicDrops.length; k++) {
-                        let name = relicDrops[k].location;
-                        let isVaulted = !relics[name];
-                        name = name.substr(0, name.lastIndexOf(' ')) + ' ' + relicDrops[k].rarity;
-                        if (isVaulted){
-                          name += ' (V)';
-                        }
-                        if (relicNames.indexOf(name) === -1) {
-                          relicNames.push(name);
-                        }
-                      }
-                      if (relicNames.length > 0) {
-                        component.location = relicNames.join(', ');
-                      }
+                      component.name = item.name + ' ' + component.name;
                     }
 
                     component.owner = item;
                     if (!item.children) {
                       item.children = [];
                     }
+
+                    component.hierarchyName =
+                      item.hierarchyName + '.' + component.uniqueName;
                     item.children.push(component);
 
                     index++;
@@ -210,11 +255,25 @@ export class ProgressComponent implements OnInit, AfterViewInit {
 
             for (let i = 0; i < this.items.length; i++) {
               let item = this.items[i];
-              let p = progress[item.uniqueName];
+              let p = progress[item.hierarchyName];
               if (p) {
                 item.userItem = p;
               }
             }
+
+            for (const item of this.items) {
+              if (
+                item.category &&
+                this.categories.indexOf(item.category) === -1
+              ) {
+                this.categories.push(item.category);
+              }
+              if (item.type && this.types.indexOf(item.type) === -1) {
+                this.types.push(item.type);
+              }
+            }
+            this.categories.sort();
+            this.types.sort();
 
             this.filterItems();
 
@@ -257,44 +316,75 @@ export class ProgressComponent implements OnInit, AfterViewInit {
   }
 
   filterItems() {
+    //Store filter arguments
+    if (typeof Storage !== 'undefined') {
+      localStorage.setItem(
+        'progress-filter',
+        JSON.stringify({
+          text: this._filterText,
+          textType: this._filterTextType,
+          category: this._filterCategory,
+          type: this._filterType,
+          progress: this._filterProgress
+        })
+      );
+    }
+
     this.filterCount = 0;
-    this.filteredItems = this.items.filter(item => this.filterItem(item));
+    if (this.items) {
+      this.filteredItems = this.items.filter(
+        item => (item.isVisible = this.filterItem(item))
+      );
+    }
     this.virtualScroll();
   }
 
   filterItem(item: IItem) {
-    if (item.owner && !item.owner.isOpen) {
+    if (item.owner && (!item.owner.isOpen || !item.owner.isVisible)) {
       return false;
     }
 
-    if (this._progress !== "all") {
+    if (this._filterProgress !== 'all') {
       let maxProgress = (<any>item).itemCount || 2;
       let progress = item.userItem ? item.userItem.progress || 0 : 0;
 
-      if (this._progress == "noprogress" && progress > 0) {
+      if (this._filterProgress == 'noprogress' && progress > 0) {
         return false;
       } else if (
-        this._progress == "inprogress" &&
+        this._filterProgress == 'inprogress' &&
         (progress >= maxProgress || progress === 0)
       ) {
         return false;
-      } else if (this._progress == "notfinished" && progress >= maxProgress) {
+      } else if (
+        this._filterProgress == 'notfinished' &&
+        progress >= maxProgress
+      ) {
         return false;
-      } else if (this._progress == "finished" && progress < maxProgress) {
+      } else if (this._filterProgress == 'finished' && progress < maxProgress) {
         return false;
       }
     }
 
     if (
       !item.owner &&
-      this._filterCategory !== this.categoryAll &&
+      this._filterCategory.length !== 0 &&
       this._filterCategory.indexOf(item.category) === -1
     ) {
       return false;
     }
 
-    if (this._filterRegex) {
-      if (item.name && this._filterRegex.test(item.name)) {
+    if (
+      !item.owner &&
+      this._filterType.length !== 0 &&
+      this._filterType.indexOf(item.type) === -1
+    ) {
+      return false;
+    }
+
+    if (item.owner && item.owner.isVisible) {
+      return true;
+    } else if (this._filterMethod) {
+      if (item.name && this._filterMethod(item.name)) {
         return true;
       }
       // if (item.description && this._filterRegex.test(item.description)) {
@@ -303,7 +393,7 @@ export class ProgressComponent implements OnInit, AfterViewInit {
       if (
         item.userItem &&
         item.userItem.note &&
-        this._filterRegex.test(item.userItem.note)
+        this._filterMethod(item.userItem.note)
       ) {
         return true;
       }
@@ -314,33 +404,27 @@ export class ProgressComponent implements OnInit, AfterViewInit {
     return false;
   }
 
-  setProgress(item: IItem, checked: boolean, value: number) {
-    if (!item.userItem) {
-      item.userItem = { itemId: item.uniqueName, progress: value };
-    } else {
+  setProgress(item: IItem, value: number) {
+    if (item.userItem) {
+      if (item.userItem.progress == value) {
+        return;
+      }
+
       item.userItem.progress = value;
+    } else {
+      item.userItem = { itemId: item.hierarchyName, progress: value };
     }
+
     this.context.service
-      .setProgress(item.uniqueName, checked ? value : value - 1)
+      .setProgress(item.userItem.itemId, item.userItem.progress)
       .toPromise()
       .then(() => {
-        if (checked && item.children) {
+        if (
+          item.userItem.progress == ((<any>item).itemCount || 2) &&
+          item.children
+        ) {
           for (let child of item.children) {
-            let maxProgress = (<any>child).itemCount || 2;
-            if (!child.userItem) {
-              child.userItem = { itemId: item.uniqueName, progress: 0 };
-            }
-
-            if (child.userItem.progress != maxProgress) {
-              child.userItem.progress = maxProgress;
-              this.context.service
-                .setProgress(child.uniqueName, maxProgress)
-                .toPromise()
-                .catch(err => {
-                  this.context.alert(err.message || err);
-                  this.init();
-                });
-            }
+            this.setProgress(child, (<any>child).itemCount || 2);
           }
         }
       })
@@ -353,14 +437,18 @@ export class ProgressComponent implements OnInit, AfterViewInit {
   editNote(item: IItem) {
     this.context.dialog
       .open(TextEditorComponent, {
-        width: "50%",
-        data: { title: "Note", text: item.userItem ? item.userItem.note : "" }
+        width: '50%',
+        data: { title: 'Note', text: item.userItem ? item.userItem.note : '' }
       })
       .afterClosed()
       .subscribe(res => {
         if (res !== false) {
           if (!item.userItem) {
-            item.userItem = { itemId: item.uniqueName, progress: 0, note: res };
+            item.userItem = {
+              itemId: item.hierarchyName,
+              progress: 0,
+              note: res
+            };
           } else {
             item.userItem.note = res;
           }
@@ -405,21 +493,48 @@ export class ProgressComponent implements OnInit, AfterViewInit {
     this.visibleItems = [];
 
     let currentTop = 0;
-    for (let i = 0; i < this.filteredItems.length; i++) {
-      if (bottom < currentTop || top > currentTop + itemHeight) {
-        //Not visible
-      } else {
-        let item = this.filteredItems[i];
-        item.top = currentTop;
-        item.height = itemHeight;
-        item.isEven = i % 2 === 0;
-        this.visibleItems.push(item);
-      }
 
-      currentTop += itemHeight;
+    if (this.filteredItems) {
+      for (let i = 0; i < this.filteredItems.length; i++) {
+        if (bottom < currentTop || top > currentTop + itemHeight) {
+          //Not visible
+        } else {
+          let item = this.filteredItems[i];
+          item.top = currentTop;
+          item.height = itemHeight;
+          item.isEven = i % 2 === 0;
+          this.visibleItems.push(item);
+        }
+
+        currentTop += itemHeight;
+      }
     }
 
     this.virtualHeight = currentTop;
     this.change.markForCheck();
   }
+
+  openAll() {
+    for (let item of this.filteredItems) {
+      item.isOpen = true;
+    }
+    this.filterItems();
+  }
+
+  closeAll() {
+    for (let item of this.filteredItems) {
+      item.isOpen = false;
+    }
+    this.filterItems();
+  }
+
+  // setChildItemProgress() {
+  //   for (let item of this.items) {
+  //     if (!item.owner && item.children && item.userItem && item.userItem.progress == 2) {
+  //       for (let child of item.children) {
+  //         this.setProgress(child, ((<any>item).itemCount || 2));
+  //       }
+  //     }
+  //   }
+  // }
 }

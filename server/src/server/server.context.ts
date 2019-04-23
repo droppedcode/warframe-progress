@@ -7,6 +7,8 @@ import * as sha256 from 'sha256';
 import * as path from 'path';
 import { IUserItem } from '../data/userItem';
 
+const sessionTimeout = 30 * 24 * 60 * 60 * 60 * 1000;
+
 export class ServerContext {
   private statementAddVersion;
   private statementGetVersion;
@@ -111,7 +113,7 @@ export class ServerContext {
     let row = this.statementGetUserByUserName.get(userName);
     if (row && row.password === sha256(pass)) {
       let session = uuid();
-      this.statementAddSession.run(session, row.id, Date.now() + 5 * 3600 * 1000);
+      this.statementAddSession.run(session, row.id, Date.now() + sessionTimeout);
       return session;
     }
     return null;
@@ -121,7 +123,7 @@ export class ServerContext {
     let row = this.statementGetUserByKey.get(key);
     if (row) {
       let session = uuid();
-      this.statementAddSession.run(session, row.id, Date.now() + 5 * 3600 * 1000);
+      this.statementAddSession.run(session, row.id, Date.now() + sessionTimeout);
       return session;
     }
     return null;

@@ -2,6 +2,11 @@
   "version": "1.0.0",
   "name": "angular-starter",
   "private": true,
+  "scripts": {
+    "start": "ng serve",
+    "build": "ng build --prod",
+    "deploy": "ng build --prod --outputHashing=none --deployUrl=\"/wf/\" --baseHref=\"/wf/\""
+  },
   "devDependencies": {
     "@angular-devkit/build-angular": "~0.7.0",
     "@angular/cli": "^6.1.3",
